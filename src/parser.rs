@@ -92,16 +92,17 @@ impl<'input> Parser<'input> {
 
     /// Parse assembles the token stream into a syntax tree for the following grammar.
     ///
-    /// formula :=
+    /// formula ::=
     ///   | rop formula
     ///   | stuff
     ///   | stuff lrop formula
     ///
-    /// stuff :=
+    /// stuff ::=
     ///   | thing
+    ///   | thing "[" formula "]"
     ///   | thing stuff
     ///
-    /// thing :=
+    /// thing ::=
     ///   | number
     ///   | symbol
     ///   | "(" formula ")"
@@ -174,13 +175,27 @@ impl<'input> Parser<'input> {
 
         loop {
             match self.peek()? {
-                Some(Token::LeftParens) | Some(Token::Number(_)) => stuff.push(self.parse_thing()?),
+                Some(Token::LeftParens) | Some(Token::Number(_)) => {
+                    stuff.push(self.parse_thing()?);
+                }
+
+                Some(Token::LeftBracket) => {
+                    let x = stuff.remove(stuff.len() - 1);
+                    self.expect(Token::LeftBracket)?;
+                    let i = self.parse_formula()?;
+                    self.expect(Token::RightBracket)?;
+
+                    stuff.push(Formula::Iop(Box::new(x), Box::new(i)));
+                }
+
                 Some(Token::Symbol(sym)) => {
                     if builtin::lrop(sym) {
                         break;
                     }
+
                     stuff.push(self.parse_thing()?);
                 }
+
                 _ => break,
             }
         }
@@ -193,23 +208,23 @@ impl<'input> Parser<'input> {
     }
 
     fn parse_thing(&mut self) -> Result<'input, Formula> {
-        Ok(match self.next()? {
+        match self.next()? {
             Some(Token::Number(num)) => {
                 if let Ok(n) = i64::from_str(num) {
-                    Formula::Number(n)
+                    Ok(Formula::Number(n))
                 } else {
-                    return Err(Error::Number);
+                    Err(Error::Number)
                 }
             }
-            Some(Token::Symbol(sym)) => Formula::Symbol(sym.to_string()),
+            Some(Token::Symbol(sym)) => Ok(Formula::Symbol(sym.to_string())),
             Some(Token::LeftParens) => {
                 let line = self.parse_formula()?;
                 self.expect(Token::RightParens)?;
-                line
+                Ok(line)
             }
-            Some(tok) => return Err(Error::UnexpectedToken(tok)),
-            None => return Err(Error::TokenStream),
-        })
+            Some(tok) => Err(Error::UnexpectedToken(tok)),
+            None => Err(Error::TokenStream),
+        }
     }
 
     fn parse_lrop(&mut self, stuff: Formula) -> Result<'input, Formula> {
@@ -236,7 +251,9 @@ impl<'input> Parser<'input> {
                     Err(Error::UnexpectedToken(Token::Symbol(op)))
                 }
             }
-            Some(Token::RightParens) | Some(Token::LineFeed) | None => Ok(stuff),
+            Some(Token::RightBracket) | Some(Token::RightParens) | Some(Token::LineFeed) | None => {
+                Ok(stuff)
+            }
             Some(tok) => Err(Error::UnexpectedToken(tok)),
         }
     }

@@ -35,11 +35,46 @@ impl Interpretation {
         match tree {
             Formula::Number(_) => Ok(tree),
             Formula::Rop(op, r) => self.reduce_rop(&op, *r),
+            Formula::Iop(x, i) => self.reduce_iop(*x, *i),
             Formula::Arop(adv, op, r) => self.reduce_arop(adv, &op, *r),
             Formula::Lrop(l, op, r) => self.reduce_lrop(*l, &op, *r),
             Formula::Array(mut array) => self.reduce_array(&mut array),
             Formula::Table(mut shape, mut data) => self.reduce_table(&mut shape, &mut data),
             Formula::Symbol(sym) => self.bindings.get(&sym).cloned().ok_or(Error::Symbol),
+        }
+    }
+
+    fn reduce_iop(&mut self, f: Formula, i: Formula) -> Result<Formula, Error> {
+        let f = self.reduce(f)?;
+        let i = self.reduce(i)?;
+
+        match (f, i) {
+            (Formula::Array(data), Formula::Number(n)) => {
+                if n as usize >= data.len() {
+                    Err(Error::Generic("index out of bound"))
+                } else {
+                    self.reduce(data[n as usize].clone())
+                }
+            }
+
+            (Formula::Array(data), Formula::Array(ks)) => {
+                let mut r = vec![];
+
+                for k in ks {
+                    if let Formula::Number(n) = k {
+                        if n as usize >= data.len() {
+                            return Err(Error::Generic("index out of bound"));
+                        }
+                        r.push(self.reduce(data[n as usize].clone())?);
+                    } else {
+                        return Err(Error::Generic("index out of bound"));
+                    }
+                }
+
+                Ok(Formula::Array(r))
+            }
+
+            _ => Err(Error::Generic("indexing pattern not yet supported")),
         }
     }
 
@@ -543,5 +578,27 @@ mod tests {
         );
         let y = Formula::Array(vec![Formula::Number(4), Formula::Number(6)]);
         assert_eq!(terp.reduce(f).unwrap(), y);
+    }
+
+    #[test]
+    fn test_array_iop_number() {
+        let mut terp = Interpretation::new();
+        let f = Formula::Iop(
+            Box::new(Formula::Array(vec![Formula::Number(1), Formula::Number(2)])),
+            Box::new(Formula::Number(1)),
+        );
+        let r = Formula::Number(2);
+        assert_eq!(terp.reduce(f).unwrap(), r);
+    }
+
+    #[test]
+    fn test_array_iop_array() {
+        let mut terp = Interpretation::new();
+        let f = Formula::Iop(
+            Box::new(Formula::Array(vec![Formula::Number(1), Formula::Number(2)])),
+            Box::new(Formula::Array(vec![Formula::Number(0), Formula::Number(0)])),
+        );
+        let r = Formula::Array(vec![Formula::Number(1), Formula::Number(1)]);
+        assert_eq!(terp.reduce(f).unwrap(), r);
     }
 }

@@ -5,6 +5,8 @@ pub enum Token<'a> {
     Symbol(&'a str),
     LeftParens,
     RightParens,
+    LeftBracket,
+    RightBracket,
     LineFeed,
 }
 
@@ -14,8 +16,10 @@ impl std::fmt::Display for Token<'_> {
             Self::Number(str) => write!(f, "<num: {}>", str),
             Self::Verb(str) => write!(f, "<verb: {}>", str),
             Self::Symbol(str) => write!(f, "<symbol: {}>", str),
-            Self::LeftParens => write!(f, "<left parens>"),
-            Self::RightParens => write!(f, "<right parens>"),
+            Self::LeftParens => write!(f, "<(>"),
+            Self::RightParens => write!(f, "<)>"),
+            Self::LeftBracket => write!(f, "<[>"),
+            Self::RightBracket => write!(f, "<]>"),
             Self::LineFeed => write!(f, "<lf>"),
         }
     }
@@ -173,6 +177,17 @@ impl<'src> Scanner<'src> {
                 s.shift();
                 Action::Yield(Some(Token::RightParens))
             }
+
+            '[' => {
+                s.shift();
+                Action::Yield(Some(Token::LeftBracket))
+            }
+
+            ']' => {
+                s.shift();
+                Action::Yield(Some(Token::RightBracket))
+            }
+
             _ => Action::Err(Error::UnexpectedRune(s.now())),
         }
     }

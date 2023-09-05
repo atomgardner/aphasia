@@ -1,5 +1,6 @@
+. move to WellFormedFormula
+. more indexing
 . inner product
-. indexing
 . outer product
 . different number fields
 . arbitrary precision
@@ -10,5 +11,4 @@
 . input
 . fix scanner bugs
 . get Formula off the heap
-. WellFormedFormula
 . input from file

@@ -7,6 +7,7 @@ pub enum Formula {
     Rop(String, Box<Formula>),
     Arop(Adverb, String, Box<Formula>),
     Lrop(Box<Formula>, String, Box<Formula>),
+    Iop(Box<Formula>, Box<Formula>),
 }
 
 impl Formula {
@@ -136,6 +137,7 @@ impl std::fmt::Display for Formula {
             Formula::Rop(op, x) => write!(f, "({} {})", op, x),
             Formula::Arop(a, op, x) => write!(f, "(({}{}) {})", op, a, x),
             Formula::Lrop(l, op, r) => write!(f, "(({}) <{}> ({}))", l, op, r),
+            Formula::Iop(x, i) => write!(f, "(({}) [({})])", x, i),
         }
     }
 }
