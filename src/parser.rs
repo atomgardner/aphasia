@@ -120,13 +120,13 @@ impl<'input> Parser<'input> {
 
     fn parse_formula(&mut self) -> Result<'input, Formula> {
         match self.peek()? {
-            Some(Token::Verb(mon)) => {
+            Some(Token::Verb(verb)) => {
                 self.next()?;
-                if mon.find(|c: char| matches!(c, '/' | '\\')).is_some() {
-                    self.parse_arop(mon)
+                if verb.find(|c: char| matches!(c, '/' | '\\')).is_some() {
+                    self.parse_arop(verb)
                 } else {
                     Ok(Formula::Rop(
-                        mon.to_string(),
+                        verb.to_string(),
                         Box::new(self.parse_formula()?),
                     ))
                 }
@@ -153,11 +153,11 @@ impl<'input> Parser<'input> {
 
     fn parse_arop(&mut self, lrop: &str) -> Result<'input, Formula> {
         if let Some(i) = lrop.find('/') {
-            return Ok(Formula::Arop(
+            Ok(Formula::Arop(
                 Adverb::Over,
                 lrop[..i].to_string(),
                 Box::new(self.parse_formula()?),
-            ));
+            ))
         } else if let Some(i) = lrop.find('\\') {
             Ok(Formula::Arop(
                 Adverb::Scan,

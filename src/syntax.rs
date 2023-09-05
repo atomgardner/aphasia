@@ -127,7 +127,7 @@ impl std::fmt::Display for Formula {
                             }
                         }
                         let prefix = if shape.len() == 2 { "" } else { "[" };
-                        fmt_table(f, prefix, width, &shape, &data)?
+                        fmt_table(f, prefix, width, shape, data)?
                     }
                 }
                 Ok(())

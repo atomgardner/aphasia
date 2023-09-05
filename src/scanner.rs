@@ -251,9 +251,9 @@ mod tests {
     fn run_test(input: &str, tokens: Vec<Token>) {
         let mut s = Scanner::new(input);
         for want in tokens.into_iter() {
-            assert_eq!(Some(Ok(want)), Iterator::next(&mut s));
+            assert_eq!(Some(Ok(want)), s.next());
         }
-        assert_eq!(Iterator::next(&mut s), None);
+        assert_eq!(s.next(), None);
     }
 
     #[test]
