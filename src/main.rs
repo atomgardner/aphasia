@@ -5,7 +5,6 @@ mod parser;
 mod reduce;
 mod scanner;
 mod syntax;
-mod token;
 
 use parser::Parser;
 use reduce::Interpretation;
