@@ -116,7 +116,11 @@ impl Interpretation {
             "deal" => match f {
                 Formula::Number(n) => {
                     let mut rng = rand::thread_rng();
-                    Ok(Formula::Number(rng.gen_range(0..n)))
+                    if n > 0 {
+                      Ok(Formula::Number(rng.gen_range(0..n)))
+                    } else {
+                      Err(Error::Generic("can not deal that many elements"))
+                    }
                 }
 
                 Formula::Array(vec) => {
