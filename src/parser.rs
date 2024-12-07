@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
-use scanner;
+use crate::scanner;
 use scanner::Scanner;
 use scanner::Token;
-use syntax::{Adverb, Formula};
+use crate::syntax::{Adverb, Formula};
 
 #[derive(Debug, PartialEq)]
 pub enum Error<'a> {
@@ -40,7 +40,7 @@ pub struct Parser<'input> {
 }
 
 impl<'input> Parser<'input> {
-    pub fn new(r: &'input str) -> Parser {
+    pub fn new(r: &str) -> Parser {
         Parser {
             scanner: Scanner::new(r),
             cache: None,

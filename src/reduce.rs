@@ -2,7 +2,7 @@ use rand::Rng;
 use std::collections::HashMap;
 use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Rem, Sub};
 
-use syntax::{Adverb, Formula};
+use crate::syntax::{Adverb, Formula};
 
 #[derive(Debug)]
 pub enum Error {
