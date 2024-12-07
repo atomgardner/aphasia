@@ -132,6 +132,10 @@ impl<'input> Parser<'input> {
                 }
             }
             Some(Token::Symbol(sym)) => {
+                if sym.find(|c: char| matches!(c, '/' | '\\')).is_some() {
+                    self.next()?;
+                    return self.parse_arop(sym);
+                }
                 if builtin::rop(sym) {
                     self.next()?;
                     return Ok(Formula::Rop(
