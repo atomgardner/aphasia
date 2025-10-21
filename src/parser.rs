@@ -40,7 +40,7 @@ pub struct Parser<'input> {
 }
 
 impl<'input> Parser<'input> {
-    pub fn new(r: &str) -> Parser {
+    pub fn new(r: &'input str) -> Parser<'input> {
         Parser {
             scanner: Scanner::new(r),
             cache: None,
