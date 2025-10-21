@@ -257,7 +257,7 @@ mod tests {
     }
 
     #[test]
-    fn test_number() {
+    fn number() {
         let input = "-1123456\n";
         let expect = [Token::Number("-1123456"), Token::LineFeed];
         let s = Scanner::new(input);
@@ -268,7 +268,7 @@ mod tests {
     }
 
     #[test]
-    fn test_numbers() {
+    fn numbers() {
         let input = "-1 1 2 3 4 5 6\n";
         let tokens = vec![
             Token::Number("-1"),
@@ -284,7 +284,7 @@ mod tests {
     }
 
     #[test]
-    fn test_basic_scan() {
+    fn basic_scan() {
         let input = "1 + enum 5\n";
         let expect = vec![
             Token::Number("1"),
@@ -297,7 +297,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parens_scan() {
+    fn parens_scan() {
         let input = "(foo bar 1 2 3)\n";
         let tokens = vec![
             Token::LeftParens,
@@ -313,7 +313,7 @@ mod tests {
     }
 
     #[test]
-    fn test_no_whitespace() {
+    fn no_whitespace() {
         let input = "1+2";
         let tokens = vec![
             Token::Number("1"),
@@ -325,21 +325,21 @@ mod tests {
     }
 
     #[test]
-    fn test_whitespace() {
+    fn whitespace() {
         let input = "1 +2";
         let tokens = vec![Token::Number("1"), Token::Number("+2"), Token::LineFeed];
         run_test(input, tokens);
     }
 
     #[test]
-    fn test_negative_whitespace() {
+    fn negative_whitespace() {
         let input = "1 -2";
         let tokens = vec![Token::Number("1"), Token::Number("-2"), Token::LineFeed];
         run_test(input, tokens);
     }
 
     #[test]
-    fn test_funky_whitespace() {
+    fn funky_whitespace() {
         let input = "1 + 2+ 3 +4";
         let tokens = vec![
             Token::Number("1"),
@@ -354,7 +354,7 @@ mod tests {
     }
 
     #[test]
-    fn test_average() {
+    fn average() {
         let input = "+/enum 100\n";
         let tokens = vec![
             Token::Verb("+/"),

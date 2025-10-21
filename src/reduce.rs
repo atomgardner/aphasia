@@ -526,21 +526,21 @@ impl From<&str> for Gadget {
 mod tests {
     use super::*;
     #[test]
-    fn test_number() {
+    fn number() {
         let mut terp = Interpretation::new();
         let f = Formula::Number(1);
         assert_eq!(terp.reduce(f).unwrap(), Formula::Number(1));
     }
 
     #[test]
-    fn test_list() {
+    fn list() {
         let mut terp = Interpretation::new();
         let f = Formula::Array(vec![Formula::Number(1)]);
         assert_eq!(terp.reduce(f.clone()).unwrap(), f);
     }
 
     #[test]
-    fn test_rop() {
+    fn rop() {
         let mut terp = Interpretation::new();
         let f = Formula::Rop("enum".to_string(), Box::new(Formula::Number(5)));
         assert_eq!(
@@ -555,7 +555,7 @@ mod tests {
     }
 
     #[test]
-    fn test_num_lrop_num() {
+    fn num_lrop_num() {
         let mut terp = Interpretation::new();
         let a = Formula::Number(1);
         let f = Formula::Lrop(Box::new(a.clone()), "+".to_string(), Box::new(a));
@@ -564,7 +564,7 @@ mod tests {
     }
 
     #[test]
-    fn test_num_lrop_array() {
+    fn num_lrop_array() {
         let mut terp = Interpretation::new();
         let a = Formula::Number(1);
         let f = Formula::Lrop(Box::new(a.clone()), "+".to_string(), Box::new(a));
@@ -573,7 +573,7 @@ mod tests {
     }
 
     #[test]
-    fn test_array_lrop_array() {
+    fn array_lrop_array() {
         let mut terp = Interpretation::new();
         let f = Formula::Lrop(
             Box::new(Formula::Array(vec![Formula::Number(1), Formula::Number(2)])),
@@ -585,7 +585,7 @@ mod tests {
     }
 
     #[test]
-    fn test_array_iop_number() {
+    fn array_iop_number() {
         let mut terp = Interpretation::new();
         let f = Formula::Iop(
             Box::new(Formula::Array(vec![Formula::Number(1), Formula::Number(2)])),
@@ -596,7 +596,7 @@ mod tests {
     }
 
     #[test]
-    fn test_array_iop_array() {
+    fn array_iop_array() {
         let mut terp = Interpretation::new();
         let f = Formula::Iop(
             Box::new(Formula::Array(vec![Formula::Number(1), Formula::Number(2)])),
