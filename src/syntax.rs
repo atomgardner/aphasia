@@ -136,8 +136,8 @@ impl std::fmt::Display for Formula {
             Formula::Symbol(symbol) => write!(f, "{}", symbol),
             Formula::Rop(op, x) => write!(f, "({} {})", op, x),
             Formula::Arop(a, op, x) => write!(f, "(({}{}) {})", op, a, x),
-            Formula::Lrop(l, op, r) => write!(f, "(({}) <{}> ({}))", l, op, r),
-            Formula::Iop(x, i) => write!(f, "(({}) [({})])", x, i),
+            Formula::Lrop(l, op, r) => write!(f, "({} ({}) ({}))", op, l, r),
+            Formula::Iop(x, i) => write!(f, "([({})] ({}))", i, x),
         }
     }
 }
