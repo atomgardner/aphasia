@@ -122,7 +122,7 @@ impl<'input> Parser<'input> {
         match self.peek()? {
             Some(Token::Verb(verb)) => {
                 self.next()?;
-                if verb.find(|c: char| matches!(c, '/' | '\\')).is_some() {
+                if verb.find(['/', '\\']).is_some() {
                     self.parse_arop(verb)
                 } else {
                     Ok(Formula::Rop(
@@ -132,7 +132,7 @@ impl<'input> Parser<'input> {
                 }
             }
             Some(Token::Symbol(sym)) => {
-                if sym.find(|c: char| matches!(c, '/' | '\\')).is_some() {
+                if sym.find(['/', '\\']).is_some() {
                     self.next()?;
                     return self.parse_arop(sym);
                 }

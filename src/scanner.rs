@@ -141,7 +141,7 @@ impl<'src> Scanner<'src> {
                     s.shift(); // adverbial
                 }
                 s.shift();
-                return Action::Yield(Some(Token::Verb(&s.src[s.tail..s.head])));
+                Action::Yield(Some(Token::Verb(&s.src[s.tail..s.head])))
             }
 
             '+' | '-' => {
@@ -209,14 +209,14 @@ impl<'src> Scanner<'src> {
             }
         }
 
-        return Action::Yield(Some(Token::Number(&s.src[tail..s.head])));
+        Action::Yield(Some(Token::Number(&s.src[tail..s.head])))
     }
 
     fn scan_sigil(&mut self) -> Action<'src> {
         let tail = self.head;
         self.shift();
         self.state = Self::scan_next;
-        return Action::Yield(Some(Token::Verb(&self.src[tail..self.head])));
+        Action::Yield(Some(Token::Verb(&self.src[tail..self.head])))
     }
 
     /// scans anything that starts with an alpha
@@ -231,7 +231,7 @@ impl<'src> Scanner<'src> {
                 break;
             }
         }
-        return Action::Yield(Some(Token::Symbol(&s.src[s.tail..s.head])));
+        Action::Yield(Some(Token::Symbol(&s.src[s.tail..s.head])))
     }
 }
 
