@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
 use crate::scanner;
+use crate::syntax::{Adverb, Formula};
 use scanner::Scanner;
 use scanner::Token;
-use crate::syntax::{Adverb, Formula};
 
 #[derive(Debug, PartialEq)]
 pub enum Error<'a> {

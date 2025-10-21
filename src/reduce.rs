@@ -117,9 +117,9 @@ impl Interpretation {
                 Formula::Number(n) => {
                     let mut rng = rand::thread_rng();
                     if n > 0 {
-                      Ok(Formula::Number(rng.gen_range(0..n)))
+                        Ok(Formula::Number(rng.gen_range(0..n)))
                     } else {
-                      Err(Error::Generic("can not deal that many elements"))
+                        Err(Error::Generic("can not deal that many elements"))
                     }
                 }
 
