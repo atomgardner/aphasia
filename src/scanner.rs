@@ -364,4 +364,18 @@ mod tests {
         ];
         run_test(input, tokens);
     }
+
+    #[test]
+    fn assign() {
+        let input = "x =+/enum 100\n";
+        let tokens = vec![
+            Token::Symbol("x"),
+            Token::Verb("="),
+            Token::Verb("+/"),
+            Token::Symbol("enum"),
+            Token::Number("100"),
+            Token::LineFeed,
+        ];
+        run_test(input, tokens);
+    }
 }

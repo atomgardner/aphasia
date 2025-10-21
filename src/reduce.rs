@@ -605,4 +605,26 @@ mod tests {
         let r = Formula::Array(vec![Formula::Number(1), Formula::Number(1)]);
         assert_eq!(terp.reduce(f).unwrap(), r);
     }
+
+    #[test]
+    fn basic_assign() {
+        let mut terp = Interpretation::new();
+        let f = Formula::Lrop(
+            Box::new(Formula::Symbol("x".to_string())),
+            "=".to_string(),
+            Box::new(Formula::Rop(
+                "enum".to_string(),
+                Box::new(Formula::Number(4)),
+            )),
+        );
+        let r = Formula::Array(vec![
+            Formula::Number(0),
+            Formula::Number(1),
+            Formula::Number(2),
+            Formula::Number(3),
+        ]);
+        assert_eq!(terp.reduce(f).unwrap(), r);
+        let g = Formula::Symbol("x".to_string());
+        assert_eq!(terp.reduce(g).unwrap(), r);
+    }
 }
