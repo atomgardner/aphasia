@@ -5,4 +5,4 @@ version = "0.0.0"
 authors = ["Thomas Gardner <tom@faff.stream>"]
 
 [dependencies]
-rand = "0.8.5"
+rand = "0.9.2"

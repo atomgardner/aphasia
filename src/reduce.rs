@@ -1,3 +1,4 @@
+use rand::rngs::ThreadRng;
 use rand::Rng;
 use std::collections::HashMap;
 use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Rem, Sub};
@@ -22,12 +23,14 @@ impl std::fmt::Display for Error {
 
 pub struct Interpretation {
     bindings: HashMap<String, Formula>,
+    rng: ThreadRng,
 }
 
 impl Interpretation {
     pub fn new() -> Interpretation {
         Self {
             bindings: HashMap::new(),
+            rng: rand::rng(),
         }
     }
 
@@ -115,24 +118,22 @@ impl Interpretation {
 
             "deal" => match f {
                 Formula::Number(n) => {
-                    let mut rng = rand::thread_rng();
                     if n > 0 {
-                        Ok(Formula::Number(rng.gen_range(0..n)))
+                        Ok(Formula::Number(self.rng.random_range(0..n)))
                     } else {
                         Err(Error::Generic("can not deal that many elements"))
                     }
                 }
 
                 Formula::Array(vec) => {
-                    let mut rng = rand::thread_rng();
                     let mut res: Vec<Formula> = Vec::new();
                     for v in vec {
                         let val = self.reduce(v)?;
                         if let Formula::Number(n) = val {
-                            if n < 0 {
-                                res.push(Formula::Number(rng.gen_range(n..0)));
+                            if n > 0 {
+                                res.push(Formula::Number(self.rng.random_range(0..n)))
                             } else {
-                                res.push(Formula::Number(rng.gen_range(0..n)));
+                                return Err(Error::Generic("can not deal that many elements"));
                             }
                         } else {
                             return Err(Error::Generic("`deal` is only implemented for numbers"));
