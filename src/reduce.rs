@@ -562,110 +562,60 @@ mod tests {
         Parser::new(s).parse().unwrap()
     }
 
-    fn num(n: i64) -> Formula {
-        Formula::Number(n)
+    fn reduce_eq(s: &str, t: &str) {
+        let mut terp = Interpretation::new();
+        let f = parse(s);
+        let g = parse(t);
+        assert_eq!(terp.reduce(f).unwrap(), g);
     }
 
     #[test]
     fn number() {
-        let mut terp = Interpretation::new();
-        let f = Formula::Number(1);
-        assert_eq!(terp.reduce(f).unwrap(), Formula::Number(1));
+        reduce_eq("1", "1");
     }
 
     #[test]
-    fn list() {
-        let mut terp = Interpretation::new();
-        let f = Formula::Array(vec![Formula::Number(1)]);
-        assert_eq!(terp.reduce(f.clone()).unwrap(), f);
+    fn array() {
+        reduce_eq("1337 420 69", "1337 420 69");
     }
 
     #[test]
-    fn rop() {
-        let mut terp = Interpretation::new();
-        let f = Formula::Rop("enum".to_string(), Box::new(Formula::Number(5)));
-        assert_eq!(
-            terp.reduce(f).unwrap(),
-            Formula::Array(
-                vec![0, 1, 2, 3, 4]
-                    .into_iter()
-                    .map(Formula::Number)
-                    .collect()
-            )
-        );
+    fn enum_num() {
+        reduce_eq("enum 5", "0 1 2 3 4");
     }
 
     #[test]
     fn num_lrop_num() {
-        let mut terp = Interpretation::new();
-        let a = Formula::Number(1);
-        let f = Formula::Lrop(Box::new(a.clone()), "+".to_string(), Box::new(a));
-        let y = Formula::Number(2);
-        assert_eq!(terp.reduce(f).unwrap(), y);
+        reduce_eq("19 * 27", "513");
     }
 
     #[test]
     fn num_lrop_array() {
-        let mut terp = Interpretation::new();
-        let a = Formula::Number(1);
-        let f = Formula::Lrop(Box::new(a.clone()), "+".to_string(), Box::new(a));
-        let y = Formula::Number(2);
-        assert_eq!(terp.reduce(f).unwrap(), y);
+        reduce_eq("1 + enum 5", "1 2 3 4 5");
     }
 
     #[test]
     fn array_lrop_array() {
-        let mut terp = Interpretation::new();
-        let f = Formula::Lrop(
-            Box::new(Formula::Array(vec![Formula::Number(1), Formula::Number(2)])),
-            "+".to_string(),
-            Box::new(Formula::Array(vec![Formula::Number(3), Formula::Number(4)])),
-        );
-        let y = Formula::Array(vec![Formula::Number(4), Formula::Number(6)]);
-        assert_eq!(terp.reduce(f).unwrap(), y);
+        reduce_eq("1 2 + 3 4", "4 6");
     }
 
     #[test]
     fn array_iop_number() {
-        let mut terp = Interpretation::new();
-        let f = Formula::Iop(
-            Box::new(Formula::Array(vec![Formula::Number(1), Formula::Number(2)])),
-            Box::new(Formula::Number(1)),
-        );
-        let r = Formula::Number(2);
-        assert_eq!(terp.reduce(f).unwrap(), r);
+        reduce_eq("(1 2)[1]", "2");
     }
 
     #[test]
     fn array_iop_array() {
-        let mut terp = Interpretation::new();
-        let f = Formula::Iop(
-            Box::new(Formula::Array(vec![Formula::Number(1), Formula::Number(2)])),
-            Box::new(Formula::Array(vec![Formula::Number(0), Formula::Number(0)])),
-        );
-        let r = Formula::Array(vec![Formula::Number(1), Formula::Number(1)]);
-        assert_eq!(terp.reduce(f).unwrap(), r);
+        reduce_eq("(1 2 3)[0 1 0 2]", "1 2 1 3");
     }
 
     #[test]
     fn basic_assign() {
         let mut terp = Interpretation::new();
-        let f = Formula::Lrop(
-            Box::new(Formula::Symbol("x".to_string())),
-            "=".to_string(),
-            Box::new(Formula::Rop(
-                "enum".to_string(),
-                Box::new(Formula::Number(4)),
-            )),
-        );
-        let r = Formula::Array(vec![
-            Formula::Number(0),
-            Formula::Number(1),
-            Formula::Number(2),
-            Formula::Number(3),
-        ]);
+        let f = parse("x = enum 4");
+        let r = parse("0 1 2 3");
         assert_eq!(terp.reduce(f).unwrap(), r);
-        let g = Formula::Symbol("x".to_string());
+        let g = parse("x");
         assert_eq!(terp.reduce(g).unwrap(), r);
     }
 
@@ -675,7 +625,7 @@ mod tests {
         let f = parse("x = enum 4");
         let r = parse("0 1 2 3");
         assert_eq!(terp.reduce(f).unwrap(), r);
-        let g = parse("x,(1 drop x)");
+        let g = parse("x , (1 drop x)");
         let s = parse("0 1 2 3 1 2 3");
         assert_eq!(terp.reduce(g).unwrap(), s);
     }
@@ -686,7 +636,7 @@ mod tests {
         let f = parse("x = enum 4");
         let r = parse("0 1 2 3");
         assert_eq!(terp.reduce(f).unwrap(), r);
-        let g = parse("x, 50");
+        let g = parse("x , 50");
         let s = parse("0 1 2 3 50");
         assert_eq!(terp.reduce(g).unwrap(), s);
     }
@@ -704,16 +654,11 @@ mod tests {
 
     #[test]
     fn ravel_num() {
-        let mut terp = Interpretation::new();
-        let f = parse("shape ,5");
-        assert_eq!(terp.reduce(f).unwrap(), num(1));
+        reduce_eq("shape , 5", "1");
     }
 
     #[test]
     fn ravel_array() {
-        let mut terp = Interpretation::new();
-        let f = parse(", 3 2 1 shape enum 6");
-        let g = parse("0 1 2 3 4 5");
-        assert_eq!(terp.reduce(f).unwrap(), g);
+        reduce_eq(", 3 2 1 shape enum 6", "0 1 2 3 4 5");
     }
 }
