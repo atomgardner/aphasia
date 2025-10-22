@@ -277,13 +277,37 @@ mod builtin {
 mod tests {
     use super::*;
 
+    fn parse(s: &str) -> Formula {
+        Parser::new(s).parse().unwrap()
+    }
+
+    fn parse_err(s: &str) -> Error<'_> {
+        Parser::new(s).parse().unwrap_err()
+    }
+
+    fn lrop(l: Formula, op: &str, r: Formula) -> Formula {
+        Formula::Lrop(Box::new(l), op.to_string(), Box::new(r))
+    }
+
+    fn num(n: i64) -> Formula {
+        Formula::Number(n)
+    }
+
+    fn rop(op: &str, r: Formula) -> Formula {
+        Formula::Rop(op.to_string(), Box::new(r))
+    }
+
+    fn sym(s: &str) -> Formula {
+        Formula::Symbol(s.to_string())
+    }
+
     #[test]
     fn tokenstream() {
-        let mut p = Parser::new("(1 + 1)");
+        let mut p = Parser::new("(1 + 2)");
         assert_eq!(Ok(Some(Token::LeftParens)), p.next());
         assert_eq!(Ok(Some(Token::Number("1"))), p.next());
         assert_eq!(Ok(Some(Token::Verb("+"))), p.next());
-        assert_eq!(Ok(Some(Token::Number("1"))), p.next());
+        assert_eq!(Ok(Some(Token::Number("2"))), p.next());
         assert_eq!(Ok(Some(Token::RightParens)), p.next());
         assert_eq!(Ok(Some(Token::LineFeed)), p.next());
         assert_eq!(Ok(None), p.next());
@@ -294,7 +318,7 @@ mod tests {
 
     #[test]
     fn lookahead() {
-        let mut p = Parser::new("(1 + 1)");
+        let mut p = Parser::new("(1 + 2)");
         assert_eq!(Ok(Some(Token::LeftParens)), p.peek());
         assert_eq!(Ok(Some(Token::LeftParens)), p.next());
 
@@ -304,8 +328,8 @@ mod tests {
         assert_eq!(Ok(Some(Token::Verb("+"))), p.peek());
         assert_eq!(Ok(Some(Token::Verb("+"))), p.next());
 
-        assert_eq!(Ok(Some(Token::Number("1"))), p.peek());
-        assert_eq!(Ok(Some(Token::Number("1"))), p.next());
+        assert_eq!(Ok(Some(Token::Number("2"))), p.peek());
+        assert_eq!(Ok(Some(Token::Number("2"))), p.next());
 
         assert_eq!(Ok(Some(Token::RightParens)), p.peek());
         assert_eq!(Ok(Some(Token::RightParens)), p.next());
@@ -318,287 +342,164 @@ mod tests {
     }
 
     #[test]
-    fn parenthetical() {
-        let mut p = Parser::new("(1 + 1)");
+    fn unbalanced_parens() {
+        let mut p = Parser::new("(1+2))");
+        assert_eq!(Ok(Some(Token::LeftParens)), p.next());
+        assert_eq!(Ok(Some(Token::Number("1"))), p.next());
+        assert_eq!(Ok(Some(Token::Verb("+"))), p.next());
+        assert_eq!(Ok(Some(Token::Number("2"))), p.next());
+        assert_eq!(Ok(Some(Token::RightParens)), p.next());
+        assert_eq!(Ok(Some(Token::RightParens)), p.next());
+    }
+
+    #[test]
+    fn trailing_parens() {
+        assert_eq!(parse_err("1 + 2("), Error::UnexpectedToken(Token::LineFeed));
         assert_eq!(
-            p.parse().unwrap(),
-            Formula::Lrop(
-                Box::new(Formula::Number(1)),
-                "+".to_string(),
-                Box::new(Formula::Number(1))
-            )
+            parse_err("1 + 2)"),
+            Error::UnexpectedToken(Token::RightParens)
         );
+    }
+
+    #[test]
+    fn parenthetical() {
+        assert_eq!(parse("(1 + 1)"), lrop(num(1), "+", num(1)));
     }
 
     #[test]
     fn list() {
-        let mut p = Parser::new("1 1");
-        assert_eq!(
-            p.parse().unwrap(),
-            Formula::Array(vec![Formula::Number(1), Formula::Number(1)])
-        );
+        assert_eq!(parse("1 1"), Formula::Array(vec![num(1), num(1)]));
     }
 
     #[test]
     fn formula_in_list() {
-        let mut p = Parser::new("(1 + 1) 1 1");
         assert_eq!(
-            p.parse().unwrap(),
-            Formula::Array(vec![
-                Formula::Lrop(
-                    Box::new(Formula::Number(1)),
-                    "+".to_string(),
-                    Box::new(Formula::Number(1))
-                ),
-                Formula::Number(1),
-                Formula::Number(1),
-            ])
+            parse("(1 + 1) 1 1"),
+            Formula::Array(vec![lrop(num(1), "+", num(1)), num(1), num(1)])
         );
     }
 
     #[test]
     fn formula_in_middle_of_list() {
-        let mut p = Parser::new("2 (1 + 1) 1 1");
         assert_eq!(
-            p.parse().unwrap(),
-            Formula::Array(vec![
-                Formula::Number(2),
-                Formula::Lrop(
-                    Box::new(Formula::Number(1)),
-                    "+".to_string(),
-                    Box::new(Formula::Number(1))
-                ),
-                Formula::Number(1),
-                Formula::Number(1),
-            ])
+            parse("2 (1 + 1) 1 1"),
+            Formula::Array(vec![num(2), lrop(num(1), "+", num(1)), num(1), num(1)])
         );
     }
 
     #[test]
     fn formula_at_end_of_list() {
-        let mut p = Parser::new("1 2 3 (2+2)");
         assert_eq!(
-            p.parse().unwrap(),
-            Formula::Array(vec![
-                Formula::Number(1),
-                Formula::Number(2),
-                Formula::Number(3),
-                Formula::Lrop(
-                    Box::new(Formula::Number(2)),
-                    "+".to_string(),
-                    Box::new(Formula::Number(2))
-                ),
-            ])
+            parse("1 2 3 (2+2)"),
+            Formula::Array(vec![num(1), num(2), num(3), lrop(num(2), "+", num(2))])
         );
     }
 
     #[test]
     fn dyad_with_formula_in_list() {
-        let mut p = Parser::new("1 + (1 + 1) 1 1");
         assert_eq!(
-            p.parse().unwrap(),
-            Formula::Lrop(
-                Box::new(Formula::Number(1)),
-                "+".to_string(),
-                Box::new(Formula::Array(vec![
-                    Formula::Lrop(
-                        Box::new(Formula::Number(1)),
-                        "+".to_string(),
-                        Box::new(Formula::Number(1))
-                    ),
-                    Formula::Number(1),
-                    Formula::Number(1),
-                ])),
+            parse("1 + (1 + 1) 1 1"),
+            lrop(
+                num(1),
+                "+",
+                Formula::Array(vec![lrop(num(1), "+", num(1)), num(1), num(1)]),
             )
         );
-    }
-
-    #[test]
-    fn unbalanced_parens() {
-        let mut p = Parser::new("(1+1))");
-        assert_eq!(Ok(Some(Token::LeftParens)), p.next());
-        assert_eq!(Ok(Some(Token::Number("1"))), p.next());
-        assert_eq!(Ok(Some(Token::Verb("+"))), p.next());
-        assert_eq!(Ok(Some(Token::Number("1"))), p.next());
-        assert_eq!(Ok(Some(Token::RightParens)), p.next());
-        assert_eq!(Ok(Some(Token::RightParens)), p.next());
     }
 
     #[test]
     fn basic_parse() {
-        let mut p = Parser::new("1 + 1");
-        assert_eq!(
-            p.parse().unwrap(),
-            Formula::Lrop(
-                Box::new(Formula::Number(1)),
-                "+".to_string(),
-                Box::new(Formula::Number(1))
-            )
-        );
+        assert_eq!(parse("1 + 1"), lrop(num(1), "+", num(1)));
     }
 
     #[test]
     fn number_lrop_list() {
-        let mut p = Parser::new("1 + 1 1 1");
         assert_eq!(
-            p.parse().unwrap(),
-            Formula::Lrop(
-                Box::new(Formula::Number(1)),
-                "+".to_string(),
-                Box::new(Formula::Array(vec![
-                    Formula::Number(1),
-                    Formula::Number(1),
-                    Formula::Number(1),
-                ]))
-            )
+            parse("1 + 1 1 1"),
+            lrop(num(1), "+", Formula::Array(vec![num(1), num(1), num(1)]))
         );
     }
 
     #[test]
     fn list_lrop_list() {
-        let mut p = Parser::new("1 1 1 + 1 1 1");
         assert_eq!(
-            p.parse().unwrap(),
-            Formula::Lrop(
-                Box::new(Formula::Array(vec![
-                    Formula::Number(1),
-                    Formula::Number(1),
-                    Formula::Number(1),
-                ])),
-                "+".to_string(),
-                Box::new(Formula::Array(vec![
-                    Formula::Number(1),
-                    Formula::Number(1),
-                    Formula::Number(1),
-                ]))
+            parse("1 2 3 + 4 5 6"),
+            lrop(
+                Formula::Array(vec![num(1), num(2), num(3)]),
+                "+",
+                Formula::Array(vec![num(4), num(5), num(6)])
             )
         );
     }
 
     #[test]
     fn unreduced_list_lrop_list() {
-        let mut p = Parser::new("(1+1) 1 1 + 1 1 1");
         assert_eq!(
-            p.parse().unwrap(),
-            Formula::Lrop(
-                Box::new(Formula::Array(vec![
-                    Formula::Lrop(
-                        Box::new(Formula::Number(1)),
-                        "+".to_string(),
-                        Box::new(Formula::Number(1)),
-                    ),
-                    Formula::Number(1),
-                    Formula::Number(1),
-                ])),
-                "+".to_string(),
-                Box::new(Formula::Array(vec![
-                    Formula::Number(1),
-                    Formula::Number(1),
-                    Formula::Number(1),
-                ]))
+            parse("(1+1) 1 1 + 1 1 1"),
+            lrop(
+                Formula::Array(vec![lrop(num(1), "+", num(1)), num(1), num(1)]),
+                "+",
+                Formula::Array(vec![num(1), num(1), num(1)])
             )
         );
     }
 
     #[test]
     fn list_lrop_unreduced_list() {
-        let mut p = Parser::new("1 1 1 + (1+1) 1 1");
         assert_eq!(
-            p.parse().unwrap(),
-            Formula::Lrop(
-                Box::new(Formula::Array(vec![
-                    Formula::Number(1),
-                    Formula::Number(1),
-                    Formula::Number(1),
-                ])),
-                "+".to_string(),
-                Box::new(Formula::Array(vec![
-                    Formula::Lrop(
-                        Box::new(Formula::Number(1)),
-                        "+".to_string(),
-                        Box::new(Formula::Number(1)),
-                    ),
-                    Formula::Number(1),
-                    Formula::Number(1),
-                ])),
+            parse("1 1 1 + (1+1) 1 1"),
+            lrop(
+                Formula::Array(vec![num(1), num(1), num(1)]),
+                "+",
+                Formula::Array(vec![lrop(num(1), "+", num(1)), num(1), num(1)])
             )
         );
     }
 
     #[test]
     fn unreducedlist_lrop_unreduced_list() {
-        let mut p = Parser::new("1 (1+1) 1 + (1+1) 1 1");
         assert_eq!(
-            p.parse().unwrap(),
-            Formula::Lrop(
-                Box::new(Formula::Array(vec![
-                    Formula::Number(1),
-                    Formula::Lrop(
-                        Box::new(Formula::Number(1)),
-                        "+".to_string(),
-                        Box::new(Formula::Number(1)),
-                    ),
-                    Formula::Number(1),
-                ])),
-                "+".to_string(),
-                Box::new(Formula::Array(vec![
-                    Formula::Lrop(
-                        Box::new(Formula::Number(1)),
-                        "+".to_string(),
-                        Box::new(Formula::Number(1)),
-                    ),
-                    Formula::Number(1),
-                    Formula::Number(1),
-                ])),
+            parse("1 (1+1) 1 + (1+1) 1 1"),
+            lrop(
+                Formula::Array(vec![num(1), lrop(num(1), "+", num(1)), num(1)]),
+                "+",
+                Formula::Array(vec![lrop(num(1), "+", num(1)), num(1), num(1)]),
             )
         );
     }
 
     #[test]
-    fn trailing_parens() {
-        let mut p = Parser::new("1 + 2(");
-        assert_eq!(
-            p.parse().unwrap_err(),
-            Error::UnexpectedToken(Token::LineFeed),
-        );
-        let mut p = Parser::new("1 + 2)");
-        assert_eq!(
-            p.parse().unwrap_err(),
-            Error::UnexpectedToken(Token::RightParens),
-        );
-    }
-
-    #[test]
     fn nested_parens() {
-        let mut p = Parser::new("((1 + 2) 1 2)");
         assert_eq!(
-            p.parse().unwrap(),
-            Formula::Array(vec![
-                Formula::Lrop(
-                    Box::new(Formula::Number(1)),
-                    "+".to_string(),
-                    Box::new(Formula::Number(2)),
-                ),
-                Formula::Number(1),
-                Formula::Number(2),
-            ]),
+            parse("((1 + 2) 1 2)"),
+            Formula::Array(vec![lrop(num(1), "+", num(2)), num(1), num(2)]),
         );
     }
 
     #[test]
     fn nested_lists() {
-        let mut p = Parser::new("((1 2) 3 4) 5 6");
         assert_eq!(
-            p.parse().unwrap(),
+            parse("((1 2) 3 4) 5 6"),
             Formula::Array(vec![
-                Formula::Array(vec![
-                    Formula::Array(vec![Formula::Number(1), Formula::Number(2),]),
-                    Formula::Number(3),
-                    Formula::Number(4),
-                ]),
-                Formula::Number(5),
-                Formula::Number(6),
+                Formula::Array(vec![Formula::Array(vec![num(1), num(2)]), num(3), num(4)]),
+                num(5),
+                num(6),
             ])
         );
+    }
+
+    #[test]
+    fn rop_enum_number() {
+        assert_eq!(parse("enum 5"), rop("enum", num(5)),);
+    }
+
+    #[test]
+    fn rop_rop() {
+        assert_eq!(parse("enum enum 5"), rop("enum", rop("enum", num(5))),);
+    }
+
+    #[test]
+    fn symbol() {
+        assert_eq!(parse("symbol"), sym("symbol"),);
     }
 }
