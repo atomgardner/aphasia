@@ -136,7 +136,7 @@ impl<'src> Scanner<'src> {
                 Action::Continue
             }
 
-            '*' | '/' | '%' | '=' | '|' | '&' | '^' => {
+            '*' | '/' | '%' | '=' | '|' | '&' | '^' | ',' => {
                 if let Some('/') | Some('\\') = s.soon() {
                     s.shift(); // adverbial
                 }

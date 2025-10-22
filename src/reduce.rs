@@ -85,6 +85,12 @@ impl Interpretation {
         let f = self.reduce(f)?;
         match op {
             "+" => Ok(f),
+            "," => match f {
+                Formula::Number(n) => Ok(Formula::Array(vec![Formula::Number(n)])),
+                Formula::Array(_) => Ok(f),
+                Formula::Table(_, data) => Ok(Formula::Array(data)),
+                _ => Err(Error::Generic("can't ravel that")),
+            },
             "-" => {
                 match f {
                     Formula::Number(n) => Ok(Formula::Number(-n)),
@@ -204,6 +210,30 @@ impl Interpretation {
                     rhs
                 } else {
                     return Err(Error::Generic("lhs is not a symbol"));
+                }
+            }
+
+            "," => {
+                let lhs = self.reduce(l)?;
+                match (lhs, rhs) {
+                    (Formula::Array(mut a), Formula::Array(b)) => {
+                        for c in b {
+                            a.push(c);
+                        }
+                        Formula::Array(a)
+                    }
+                    (Formula::Array(mut b), Formula::Number(n)) => {
+                        b.push(Formula::Number(n));
+                        Formula::Array(b)
+                    }
+                    (Formula::Number(n), Formula::Array(b)) => {
+                        let mut c = vec![Formula::Number(n)];
+                        c.extend(b);
+                        Formula::Array(c)
+                    }
+                    _ => {
+                        return Err(Error::Generic("combination is not yet suppported"));
+                    }
                 }
             }
 
@@ -526,6 +556,16 @@ impl From<&str> for Gadget {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::parser::Parser;
+
+    fn parse(s: &str) -> Formula {
+        Parser::new(s).parse().unwrap()
+    }
+
+    fn num(n: i64) -> Formula {
+        Formula::Number(n)
+    }
+
     #[test]
     fn number() {
         let mut terp = Interpretation::new();
@@ -627,5 +667,53 @@ mod tests {
         assert_eq!(terp.reduce(f).unwrap(), r);
         let g = Formula::Symbol("x".to_string());
         assert_eq!(terp.reduce(g).unwrap(), r);
+    }
+
+    #[test]
+    fn concat_array_array() {
+        let mut terp = Interpretation::new();
+        let f = parse("x = enum 4");
+        let r = parse("0 1 2 3");
+        assert_eq!(terp.reduce(f).unwrap(), r);
+        let g = parse("x,(1 drop x)");
+        let s = parse("0 1 2 3 1 2 3");
+        assert_eq!(terp.reduce(g).unwrap(), s);
+    }
+
+    #[test]
+    fn concat_array_num() {
+        let mut terp = Interpretation::new();
+        let f = parse("x = enum 4");
+        let r = parse("0 1 2 3");
+        assert_eq!(terp.reduce(f).unwrap(), r);
+        let g = parse("x, 50");
+        let s = parse("0 1 2 3 50");
+        assert_eq!(terp.reduce(g).unwrap(), s);
+    }
+
+    #[test]
+    fn concat_num_array() {
+        let mut terp = Interpretation::new();
+        let f = parse("x = enum 4");
+        let r = parse("0 1 2 3");
+        assert_eq!(terp.reduce(f).unwrap(), r);
+        let g = parse("100,x");
+        let s = parse("100 0 1 2 3");
+        assert_eq!(terp.reduce(g).unwrap(), s);
+    }
+
+    #[test]
+    fn ravel_num() {
+        let mut terp = Interpretation::new();
+        let f = parse("shape ,5");
+        assert_eq!(terp.reduce(f).unwrap(), num(1));
+    }
+
+    #[test]
+    fn ravel_array() {
+        let mut terp = Interpretation::new();
+        let f = parse(", 3 2 1 shape enum 6");
+        let g = parse("0 1 2 3 4 5");
+        assert_eq!(terp.reduce(f).unwrap(), g);
     }
 }
